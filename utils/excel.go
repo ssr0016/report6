@@ -21,10 +21,10 @@ func AddReportToSheet(sheet *xlsx.Sheet, report *response.ReportResponse) {
 	orgNameCell := orgNameRow.AddCell()
 	orgNameCell.Value = "ANG MANANAMPALATAYANG GUMAWA"
 	orgNameCell.SetStyle(GetOrgNameStyle())
-	orgNameCell.HMerge = 3
+	orgNameCell.HMerge = 10
 
 	// Set width for organization name row
-	for i := 0; i <= 5; i++ {
+	for i := 0; i <= 10; i++ {
 		sheet.Col(i).Width = orgNameWidth
 	}
 
@@ -33,26 +33,25 @@ func AddReportToSheet(sheet *xlsx.Sheet, report *response.ReportResponse) {
 	titleCell := titleRow.AddCell()
 	titleCell.Value = "NATIONAL WORKERS' MONTHLY REPORT"
 	titleCell.SetStyle(GetTitleStyle())
-	titleCell.HMerge = 5
+	titleCell.HMerge = 10
 
 	// Set width for main title row
-	for i := 0; i <= 5; i++ {
+	for i := 0; i <= 10; i++ {
 		sheet.Col(i).Width = titleWidth
 	}
 
 	// Add report data
-	AddRow(sheet, "ID", strconv.Itoa(report.Id))
-	AddRow(sheet, "Month Of:", report.MonthOf)
-	AddRow(sheet, "Worker Name:", report.WorkerName)
-	AddRow(sheet, "Area Of Assignment:", report.AreaOfAssignment)
-	AddRow(sheet, "Name Of Church:", report.NameOfChurch)
+	AddRow(sheet, "Month Of:", report.MonthOf, 120)
+	AddRow(sheet, "Worker Name:", report.WorkerName, 120)
+	AddRow(sheet, "Area Of Assignment:", report.AreaOfAssignment, 120)
+	AddRow(sheet, "Name Of Church:", report.NameOfChurch, 120)
 
 	// Add weekly attendance
 	activityRow := sheet.AddRow()
 	weeklyAttendanceRow := activityRow.AddCell()
 	weeklyAttendanceRow.Value = "WEEKLY ATTENDANCE"
 	weeklyAttendanceRow.SetStyle(GetWeeklyAttendanceHeaderStyle())
-	weeklyAttendanceRow.HMerge = 3
+	weeklyAttendanceRow.HMerge = 10
 
 	// Add Weekly Attendance headers
 	activityRow = sheet.AddRow()
@@ -95,29 +94,37 @@ func AddReportToSheet(sheet *xlsx.Sheet, report *response.ReportResponse) {
 
 	// Add Names as a comma-separated list
 	if len(report.Names) > 0 {
-		AddRow(sheet, "Names:", strings.Join(report.Names, ", "))
+		AddRow(sheet, "Names:", strings.Join(report.Names, ", "), 120)
 	} else {
-		AddRow(sheet, "Names:", "") // Handle case where Names array is empty
+		AddRow(sheet, "Names:", "", 120) // Handle case where Names array is empty
 	}
 
 	// Add narrative report
-	AddRow(sheet, "Narrative Report:", report.NarrativeReport)
-	AddRow(sheet, "Challenges/\nProblems encountered:", report.ChallengesAndProblemEncountered)
-	AddRow(sheet, "Prayer Requests:", report.PrayerRequest)
+	AddRow(sheet, "Narrative Report:", report.NarrativeReport, 120)
+	AddRow(sheet, "Challenges/\nProblems encountered:", report.ChallengesAndProblemEncountered, 120)
+	AddRow(sheet, "Prayer Requests:", report.PrayerRequest, 120)
 
 }
 
-func AddRow(sheet *xlsx.Sheet, field, value string) {
+func AddRow(sheet *xlsx.Sheet, field, value string, maxCharactersPerCell int) {
 	row := sheet.AddRow()
+	cellField := row.AddCell()
+	cellField.Value = field
 
-	// Create and style the field cell
-	fieldCell := row.AddCell()
-	fieldCell.Value = field
-	fieldCell.SetStyle(GetWrapTextStyle())
-
-	// Create the value cell
-	valueCell := row.AddCell()
-	valueCell.Value = value
+	cellValue := row.AddCell()
+	if len(value) > maxCharactersPerCell {
+		// Insert line breaks in the cell value based on maxCharactersPerCell
+		var wrappedValue string
+		for i, runeValue := range value {
+			wrappedValue += string(runeValue)
+			if (i+1)%maxCharactersPerCell == 0 {
+				wrappedValue += "\n"
+			}
+		}
+		cellValue.Value = wrappedValue
+	} else {
+		cellValue.Value = value
+	}
 }
 
 func GetWrapTextStyle() *xlsx.Style {
