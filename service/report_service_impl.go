@@ -8,6 +8,8 @@ import (
 	"reports/model"
 	"reports/repository"
 	"time"
+
+	"github.com/xuri/excelize/v2"
 )
 
 type ReportServiceImpl struct {
@@ -294,4 +296,43 @@ func (r *ReportServiceImpl) Update(ctx context.Context, request *request.ReportU
 	}
 
 	return nil
+}
+
+func (r *ReportServiceImpl) ExportReportToExcel(ctx context.Context, id int) (string, error) {
+	reportResp, err := r.FindById(ctx, id)
+	if err != nil {
+		return "", err
+	}
+
+	f := excelize.NewFile()
+	sheet := "Report"
+	f.NewSheet(sheet)
+	f.DeleteSheet("Sheet1")
+
+	// Headers
+	headers := []string{"ID", "Month Of", "Worker Name", "Area Of Assignment", "Name Of Church", "Worship Service", "Sunday School", "Prayer Meetings", "Bible Studies", "Mens Fellowships", "Womens Fellowships", "Youth Fellowships", "Child Fellowships", "Outreach", "Training Or Seminars", "Leadership Conferences", "Leadership Training", "Others", "Family Days", "Tithes And Offerings", "Home Visited", "Bible Study Or Group Led", "Sermon Or Message Preached", "Person Newly Contacted", "Person Followed Up", "Person Led To Christ", "Names", "Narrative Report", "Challenges And Problem Encountered", "Prayer Request", "Created At", "Updated At", "Worship Service Avg", "Sunday School Avg", "Prayer Meetings Avg", "Bible Studies Avg", "Mens Fellowships Avg", "Womens Fellowships Avg", "Youth Fellowships Avg", "Child Fellowships Avg", "Outreach Avg", "Training Or Seminars Avg", "Leadership Conferences Avg", "Leadership Training Avg", "Others Avg", "Family Days Avg", "Tithes And Offerings Avg", "Home Visited Avg", "Bible Study Or Group Led Avg", "Sermon Or Message Preached Avg", "Person Newly Contacted Avg", "Person Followed Up Avg", "Person Led To Christ Avg"}
+
+	for col, header := range headers {
+		cell, _ := excelize.CoordinatesToCellName(col+1, 1)
+		f.SetCellValue(sheet, cell, header)
+	}
+
+	// Values
+	values := []interface{}{
+		reportResp.Id, reportResp.MonthOf, reportResp.WorkerName, reportResp.AreaOfAssignment, reportResp.NameOfChurch,
+		reportResp.WorshipService, reportResp.SundaySchool, reportResp.PrayerMeetings, reportResp.BibleStudies, reportResp.MensFellowships, reportResp.WomensFellowships, reportResp.YouthFellowships, reportResp.ChildFellowships, reportResp.Outreach, reportResp.TrainingOrSeminars, reportResp.LeadershipConferences, reportResp.LeadershipTraining, reportResp.Others, reportResp.FamilyDays, reportResp.TithesAndOfferings, reportResp.HomeVisited, reportResp.BibleStudyOrGroupLed, reportResp.SermonOrMessagePreached, reportResp.PersonNewlyContacted, reportResp.PersonFollowedUp, reportResp.PersonLedToChrist, reportResp.Names, reportResp.NarrativeReport, reportResp.ChallengesAndProblemEncountered, reportResp.PrayerRequest, reportResp.CreatedAt, reportResp.UpdatedAt,
+		reportResp.WorshipServiceAvg, reportResp.SundaySchoolAvg, reportResp.PrayerMeetingsAvg, reportResp.BibleStudiesAvg, reportResp.MensFellowshipsAvg, reportResp.WomensFellowshipsAvg, reportResp.YouthFellowshipsAvg, reportResp.ChildFellowshipsAvg, reportResp.OutreachAvg, reportResp.TrainingOrSeminarsAvg, reportResp.LeadershipConferencesAvg, reportResp.LeadershipTrainingAvg, reportResp.OthersAvg, reportResp.FamilyDaysAvg, reportResp.TithesAndOfferingsAvg, reportResp.HomeVisitedAvg, reportResp.BibleStudyOrGroupLedAvg, reportResp.SermonOrMessagePreachedAvg, reportResp.PersonNewlyContactedAvg, reportResp.PersonFollowedUpAvg, reportResp.PersonLedToChristAvg,
+	}
+
+	for col, value := range values {
+		cell, _ := excelize.CoordinatesToCellName(col+1, 2)
+		f.SetCellValue(sheet, cell, value)
+	}
+
+	filePath := fmt.Sprintf("report_%d.xlsx", id)
+	if err := f.SaveAs(filePath); err != nil {
+		return "", err
+	}
+
+	return filePath, nil
 }

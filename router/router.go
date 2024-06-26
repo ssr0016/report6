@@ -23,5 +23,7 @@ func NewRouter(reportController *controller.ReportController) *gin.Engine {
 	router.PUT("/:reportId", reportController.Update)
 	router.DELETE("/:reportId", reportController.Delete)
 
+	router.GET("/:reportId/export", reportController.ExportReport)
+
 	return service
 }
