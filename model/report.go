@@ -26,7 +26,6 @@ type Report struct {
 	Others                          []int     `json:"others,omitempty"`
 	FamilyDays                      []int     `json:"family_days,omitempty"`
 	TithesAndOfferings              []int     `json:"tithes_and_offerings,omitempty"`
-	AverageAttendance               float64   `json:"average_attendance"`
 	WorshipServiceAvg               float64   `json:"worship_service_average,omitempty"`
 	SundaySchoolAvg                 float64   `json:"sunday_school_average,omitempty"`
 	PrayerMeetingsAvg               float64   `json:"prayer_meetings_average,omitempty"`

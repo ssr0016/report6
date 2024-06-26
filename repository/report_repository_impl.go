@@ -69,7 +69,6 @@ func (r *ReportRepositoryImpl) FindAll(ctx context.Context) ([]model.Report, err
             others,
             family_days,
             tithes_and_offerings,
-            average_attendance,
             home_visited,
             bible_study_or_group_led,
             sermon_or_message_preached,
@@ -141,7 +140,6 @@ func (r *ReportRepositoryImpl) FindAll(ctx context.Context) ([]model.Report, err
 			&othersJSON,
 			&familyDaysJSON,
 			&tithesAndOfferingsJSON,
-			&report.AverageAttendance,
 			&homeVisitedJSON,
 			&bibleStudyOrGroupLedJSON,
 			&sermonOrMessageJSON,
@@ -336,7 +334,6 @@ func (r *ReportRepositoryImpl) FindById(ctx context.Context, id int) (*model.Rep
 			others,
 			family_days,
 			tithes_and_offerings,
-			average_attendance,
 			home_visited,
 			bible_study_or_group_led,
 			sermon_or_message_preached,
@@ -401,7 +398,6 @@ func (r *ReportRepositoryImpl) FindById(ctx context.Context, id int) (*model.Rep
 		&othersJSON,
 		&familyDaysJSON,
 		&tithesAndOfferingsJSON,
-		&report.AverageAttendance,
 		&homeVisitedJSON,
 		&bibleStudyOrGroupLedJSON,
 		&sermonOrMessageJSON,
@@ -693,7 +689,6 @@ func (r *ReportRepositoryImpl) Save(ctx context.Context, report *model.Report) e
 			others,
 			family_days,
 			tithes_and_offerings,
-			average_attendance,
 			home_visited,
 			bible_study_or_group_led,
 			sermon_or_message_preached,
@@ -706,7 +701,7 @@ func (r *ReportRepositoryImpl) Save(ctx context.Context, report *model.Report) e
 			prayer_request,
 			created_at,
 			updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31)
 	`
 
 	_, err = tx.ExecContext(ctx, rawSQL,
@@ -729,7 +724,6 @@ func (r *ReportRepositoryImpl) Save(ctx context.Context, report *model.Report) e
 		othersJSON,
 		familyDaysJSON,
 		tithesAndOfferingsJSON,
-		report.AverageAttendance,
 		homeVisitedJSON,
 		bibleStudyOrGroupLedJSON,
 		sermonOrMessagePreachedJSON,
@@ -779,18 +773,17 @@ func (r *ReportRepositoryImpl) Update(ctx context.Context, report *model.Report)
             others = $17,
             family_days = $18,
             tithes_and_offerings = $19,
-            average_attendance = $20,
-            home_visited = $21,
-            bible_study_or_group_led = $22,
-            sermon_or_message_preached = $23,
-            person_newly_contacted = $24,
-            person_followed_up = $25,
-            person_led_to_christ = $26,
-            names = $27,
-            narrative_report = $28,
-            challenges_and_problem_encountered = $29,
-            prayer_request = $30,
-            updated_at = $31
+            home_visited = $20,
+            bible_study_or_group_led = $21,
+            sermon_or_message_preached = $22,
+            person_newly_contacted = $23,
+            person_followed_up = $24,
+            person_led_to_christ = $25,
+            names = $26,
+            narrative_report = $27,
+            challenges_and_problem_encountered = $28,
+            prayer_request = $29,
+            updated_at = $30
         WHERE 
             id = $32
     `
@@ -906,7 +899,6 @@ func (r *ReportRepositoryImpl) Update(ctx context.Context, report *model.Report)
 		othersJSON,
 		familyDaysJSON,
 		tithesAndOfferingsJSON,
-		report.AverageAttendance,
 		homeVisitedJSON,
 		bibleStudyOrGroupLedJSON,
 		sermonOrMessagePreachedJSON,

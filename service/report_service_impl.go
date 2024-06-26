@@ -57,7 +57,6 @@ func (r *ReportServiceImpl) Create(ctx context.Context, request *request.ReportC
 		Others:                          request.Others,
 		FamilyDays:                      request.FamilyDays,
 		TithesAndOfferings:              request.TithesAndOfferings,
-		AverageAttendance:               request.AverageAttendance,
 		HomeVisited:                     request.HomeVisited,
 		BibleStudyOrGroupLed:            request.BibleStudyOrGroupLed,
 		SermonOrMessagePreached:         request.SermonOrMessagePreached,
