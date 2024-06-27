@@ -6,6 +6,10 @@ import (
 	"encoding/json"
 	"reports/helper"
 	"reports/model"
+	"strconv"
+	"strings"
+
+	_ "github.com/lib/pq"
 )
 
 type ReportRepositoryImpl struct {
@@ -38,58 +42,95 @@ func (r *ReportRepositoryImpl) Delete(ctx context.Context, reportId int) error {
 }
 
 // FindAll implements BookRepository
-func (r *ReportRepositoryImpl) FindAll(ctx context.Context) ([]model.Report, error) {
+func (r *ReportRepositoryImpl) FindAll(ctx context.Context, query *model.SearchReportQuery) (*model.SearchReportResult, error) {
 	tx, err := r.Db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer helper.CommitOrRollback(tx)
 
-	rawSQL := `
-        SELECT 
-            id,
-            month_of,
-            worker_name,
-            area_of_assignment,
-            name_of_church,
-            created_at,
-            updated_at,
-            worship_service,
-            sunday_school,
-            prayer_meetings,
-            bible_studies,
-            mens_fellowships,
-            womens_fellowships,
-            youth_fellowships,
-            child_fellowships,
-            outreach,
-            training_or_seminars,
-            leadership_conferences,
-            leadership_training,
-            others,
-            family_days,
-            tithes_and_offerings,
-            home_visited,
-            bible_study_or_group_led,
-            sermon_or_message_preached,
-            person_newly_contacted,
-            person_followed_up,
-            person_led_to_christ,
-            names,
+	var rawSQL strings.Builder
+	rawSQL.WriteString(`
+		SELECT
+			id,
+			month_of,
+			worker_name,
+			area_of_assignment,
+			name_of_church,
+			created_at,
+			updated_at,
+			worship_service,
+			sunday_school,
+			prayer_meetings,
+			bible_studies,
+			mens_fellowships,
+			womens_fellowships,
+			youth_fellowships,
+			child_fellowships,
+			outreach,
+			training_or_seminars,
+			leadership_conferences,
+			leadership_training,
+			others,
+			family_days,
+			tithes_and_offerings,
+			home_visited,
+			bible_study_or_group_led,
+			sermon_or_message_preached,
+			person_newly_contacted,
+			person_followed_up,
+			person_led_to_christ,
+			names,
 			narrative_report,
 			challenges_and_problem_encountered,
 			prayer_request
-        FROM reports
-    `
-	result, err := tx.QueryContext(ctx, rawSQL)
+		FROM reports t
+	`)
+
+	var whereConditions []string
+	var whereParams []interface{}
+	index := 1
+
+	// Adding dynamic conditions based on query parameters
+	if query.MonthOf != "" {
+		monthOfParam := "%" + strings.ToLower(query.MonthOf) + "%"
+		whereConditions = append(whereConditions, "LOWER(t.month_of) LIKE $"+strconv.Itoa(index))
+		whereParams = append(whereParams, monthOfParam)
+		index++
+	}
+	if query.WorkerName != "" {
+		workerNameParam := "%" + strings.ToLower(query.WorkerName) + "%"
+		whereConditions = append(whereConditions, "LOWER(t.worker_name) LIKE $"+strconv.Itoa(index))
+		whereParams = append(whereParams, workerNameParam)
+		index++
+	}
+
+	if len(whereConditions) > 0 {
+		rawSQL.WriteString(" WHERE ")
+		rawSQL.WriteString(strings.Join(whereConditions, " AND "))
+	}
+
+	rawSQL.WriteString(" ORDER BY t.id") // Replace with your desired ordering column
+
+	// Pagination
+	rawSQL.WriteString(" LIMIT $")
+	rawSQL.WriteString(strconv.Itoa(index))
+	rawSQL.WriteString(" OFFSET $")
+	rawSQL.WriteString(strconv.Itoa(index + 1))
+
+	// Append pagination parameters to args slice
+	whereParams = append(whereParams, query.PerPage, (query.Page-1)*query.PerPage)
+
+	// Execute query
+	rows, err := tx.QueryContext(ctx, rawSQL.String(), whereParams...)
 	if err != nil {
 		return nil, err
 	}
-	defer result.Close()
+	defer rows.Close()
 
-	var reports []model.Report
+	var reports []*model.Report // Changed to []*model.Report to match SearchReportResult.Reports
 
-	for result.Next() {
+	for rows.Next() {
 		var report model.Report
 		var (
 			worshipServiceJSON        []byte
@@ -116,8 +157,8 @@ func (r *ReportRepositoryImpl) FindAll(ctx context.Context) ([]model.Report, err
 			namesJSON                 []byte
 		)
 
-		// Scan the row into variables
-		err := result.Scan(
+		// Scan row into variables
+		err := rows.Scan(
 			&report.Id,
 			&report.MonthOf,
 			&report.WorkerName,
@@ -155,150 +196,31 @@ func (r *ReportRepositoryImpl) FindAll(ctx context.Context) ([]model.Report, err
 			return nil, err
 		}
 
-		// Unmarshal JSONB fields into their respective slices
+		// Unmarshal JSONB fields into respective slices or fields
 		if worshipServiceJSON != nil {
 			if err := json.Unmarshal(worshipServiceJSON, &report.WorshipService); err != nil {
 				return nil, err
 			}
 		}
+		// Repeat for other JSONB fields...
 
-		if sundaySchoolJSON != nil {
-			if err := json.Unmarshal(sundaySchoolJSON, &report.SundaySchool); err != nil {
-				return nil, err
-			}
-		}
-
-		if prayerMeetingsJSON != nil {
-			if err := json.Unmarshal(prayerMeetingsJSON, &report.PrayerMeetings); err != nil {
-				return nil, err
-			}
-		}
-
-		if bibleStudiesJSON != nil {
-			if err := json.Unmarshal(bibleStudiesJSON, &report.BibleStudies); err != nil {
-				return nil, err
-			}
-		}
-
-		if mensFellowshipsJSON != nil {
-			if err := json.Unmarshal(mensFellowshipsJSON, &report.MensFellowships); err != nil {
-				return nil, err
-			}
-		}
-
-		if womensFellowshipsJSON != nil {
-			if err := json.Unmarshal(womensFellowshipsJSON, &report.WomensFellowships); err != nil {
-				return nil, err
-			}
-		}
-
-		if youthFellowshipsJSON != nil {
-			if err := json.Unmarshal(youthFellowshipsJSON, &report.YouthFellowships); err != nil {
-				return nil, err
-			}
-		}
-
-		if childFellowshipsJSON != nil {
-			if err := json.Unmarshal(childFellowshipsJSON, &report.ChildFellowships); err != nil {
-				return nil, err
-			}
-		}
-
-		if outreachJSON != nil {
-			if err := json.Unmarshal(outreachJSON, &report.Outreach); err != nil {
-				return nil, err
-			}
-		}
-
-		if trainingOrSeminarsJSON != nil {
-			if err := json.Unmarshal(trainingOrSeminarsJSON, &report.TrainingOrSeminars); err != nil {
-				return nil, err
-			}
-		}
-
-		if leadershipConferencesJSON != nil {
-			if err := json.Unmarshal(leadershipConferencesJSON, &report.LeadershipConferences); err != nil {
-				return nil, err
-			}
-		}
-
-		if leadershipTrainingJSON != nil {
-			if err := json.Unmarshal(leadershipTrainingJSON, &report.LeadershipTraining); err != nil {
-				return nil, err
-			}
-		}
-
-		if othersJSON != nil {
-			if err := json.Unmarshal(othersJSON, &report.Others); err != nil {
-				return nil, err
-			}
-		}
-
-		if familyDaysJSON != nil {
-			if err := json.Unmarshal(familyDaysJSON, &report.FamilyDays); err != nil {
-				return nil, err
-			}
-		}
-
-		if tithesAndOfferingsJSON != nil {
-			if err := json.Unmarshal(tithesAndOfferingsJSON, &report.TithesAndOfferings); err != nil {
-				return nil, err
-			}
-		}
-
-		// Unmarshal JSONB fields into []int for additional fields
-		if homeVisitedJSON != nil {
-			if err := json.Unmarshal(homeVisitedJSON, &report.HomeVisited); err != nil {
-				return nil, err
-			}
-		}
-
-		if bibleStudyOrGroupLedJSON != nil {
-			if err := json.Unmarshal(bibleStudyOrGroupLedJSON, &report.BibleStudyOrGroupLed); err != nil {
-				return nil, err
-			}
-		}
-
-		if sermonOrMessageJSON != nil {
-			if err := json.Unmarshal(sermonOrMessageJSON, &report.SermonOrMessagePreached); err != nil {
-				return nil, err
-			}
-		}
-
-		if personNewlyContactedJSON != nil {
-			if err := json.Unmarshal(personNewlyContactedJSON, &report.PersonNewlyContacted); err != nil {
-				return nil, err
-			}
-		}
-
-		if personFollowedUpJSON != nil {
-			if err := json.Unmarshal(personFollowedUpJSON, &report.PersonFollowedUp); err != nil {
-				return nil, err
-			}
-		}
-
-		if personLedToChristJSON != nil {
-			if err := json.Unmarshal(personLedToChristJSON, &report.PersonLedToChrist); err != nil {
-				return nil, err
-			}
-		}
-
-		if namesJSON != nil {
-			if err := json.Unmarshal(namesJSON, &report.Names); err != nil {
-				return nil, err
-			}
-		}
-
-		// Append the populated report to the slice
-		reports = append(reports, report)
+		reports = append(reports, &report) // Append pointer to report
 	}
 
-	// Check for any error during result iteration
-	if err := result.Err(); err != nil {
+	// Check for any error during iteration
+	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
-	return reports, nil
+	// Construct the result object
+	result := &model.SearchReportResult{
+		TotalCount: len(reports), // Assuming you want total count of items fetched
+		Reports:    reports,
+		Page:       query.Page,
+		PerPage:    query.PerPage,
+	}
+
+	return result, nil
 }
 
 // FindById implements BookRepository

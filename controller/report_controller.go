@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"reports/data/request"
+	"reports/model"
 	"reports/service"
 	"reports/utils"
 
@@ -58,15 +59,31 @@ func (controller *ReportController) FindById(ctx *gin.Context) {
 }
 
 func (controller *ReportController) FindAll(ctx *gin.Context) {
-	reports, err := controller.reportService.FindAll(ctx)
+	// Parse query parameters
+	query := model.SearchReportQuery{
+		MonthOf:    ctx.DefaultQuery("month_of", ""),
+		WorkerName: ctx.Query("worker_name"),
+		Page:       parsePage(ctx.DefaultQuery("page", "1")),
+		PerPage:    parsePerPage(ctx.DefaultQuery("per_page", "10")),
+	}
+
+	// Call the service layer to fetch data
+	result, err := controller.reportService.FindAll(ctx, &query)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch reports", "details": err.Error()})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"reports": reports})
+	// Return the JSON response
+	ctx.JSON(http.StatusOK, gin.H{
+		"reports": gin.H{
+			"total_count": result.TotalCount,
+			"reports":     result.Reports,
+			"page":        query.Page,
+			"per_page":    query.PerPage,
+		},
+	})
 }
-
 func (controller *ReportController) Delete(ctx *gin.Context) {
 	reportId, err := strconv.Atoi(ctx.Param("reportId"))
 	if err != nil {
@@ -147,4 +164,21 @@ func (controller *ReportController) ExportReport(ctx *gin.Context) {
 	if err := file.Write(ctx.Writer); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to write Excel file"})
 	}
+}
+
+func parsePage(pageStr string) int {
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 1 {
+		return 1 // Default to page 1 if invalid or not provided
+	}
+	return page
+}
+
+// Helper function to parse per_page from query parameter
+func parsePerPage(perPageStr string) int {
+	perPage, err := strconv.Atoi(perPageStr)
+	if err != nil || perPage < 1 {
+		return 10 // Default to 10 per page if invalid or not provided
+	}
+	return perPage
 }

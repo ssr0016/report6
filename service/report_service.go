@@ -4,6 +4,7 @@ import (
 	"context"
 	"reports/data/request"
 	"reports/data/response"
+	"reports/model"
 )
 
 type ReportService interface {
@@ -11,5 +12,5 @@ type ReportService interface {
 	Update(ctx context.Context, request *request.ReportUpdateRequest) error
 	Delete(ctx context.Context, reportId int) error
 	FindById(ctx context.Context, reportId int) (*response.ReportResponse, error)
-	FindAll(ctx context.Context) ([]response.ReportResponse, error)
+	FindAll(ctx context.Context, query *model.SearchReportQuery) (*model.SearchReportResult, error)
 }

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"reports/config"
 	"reports/data/request"
 	"reports/data/response"
 	"reports/model"
@@ -14,6 +15,7 @@ import (
 
 type ReportServiceImpl struct {
 	reportRepository repository.ReportRepository
+	paginationConfig config.PaginationConfig
 }
 
 func NewReportServiceImpl(reportRepository repository.ReportRepository) ReportService {
@@ -96,77 +98,24 @@ func (r *ReportServiceImpl) Delete(ctx context.Context, reportId int) error {
 	return nil
 }
 
-func (r *ReportServiceImpl) FindAll(ctx context.Context) ([]response.ReportResponse, error) {
-	reports, err := r.reportRepository.FindAll(ctx)
+func (r *ReportServiceImpl) FindAll(ctx context.Context, query *model.SearchReportQuery) (*model.SearchReportResult, error) {
+	// Initialize pagination parameters if they are not provided or invalid
+	if query.Page <= 0 {
+		query.Page = r.paginationConfig.Page
+	}
+	if query.PerPage <= 0 {
+		query.PerPage = r.paginationConfig.PageLimit
+	}
+
+	// Fetch the data from the repository using the provided query
+	result, err := r.reportRepository.FindAll(ctx, query)
 	if err != nil {
-		return nil, err // Return error if FindAll fails
+		return nil, err
 	}
 
-	var reportResp []response.ReportResponse
+	// Construct and return the result
 
-	for _, value := range reports {
-		report := response.ReportResponse{
-			Id:                              value.Id,
-			MonthOf:                         value.MonthOf,
-			WorkerName:                      value.WorkerName,
-			AreaOfAssignment:                value.AreaOfAssignment,
-			NameOfChurch:                    value.NameOfChurch,
-			WorshipService:                  value.WorshipService,
-			SundaySchool:                    value.SundaySchool,
-			PrayerMeetings:                  value.PrayerMeetings,
-			BibleStudies:                    value.BibleStudies,
-			MensFellowships:                 value.MensFellowships,
-			WomensFellowships:               value.WomensFellowships,
-			YouthFellowships:                value.YouthFellowships,
-			ChildFellowships:                value.ChildFellowships,
-			Outreach:                        value.Outreach,
-			TrainingOrSeminars:              value.TrainingOrSeminars,
-			LeadershipConferences:           value.LeadershipConferences,
-			LeadershipTraining:              value.LeadershipTraining,
-			Others:                          value.Others,
-			FamilyDays:                      value.FamilyDays,
-			TithesAndOfferings:              value.TithesAndOfferings,
-			HomeVisited:                     value.HomeVisited,
-			BibleStudyOrGroupLed:            value.BibleStudyOrGroupLed,
-			SermonOrMessagePreached:         value.SermonOrMessagePreached,
-			PersonNewlyContacted:            value.PersonNewlyContacted,
-			PersonFollowedUp:                value.PersonFollowedUp,
-			PersonLedToChrist:               value.PersonLedToChrist,
-			Names:                           value.Names,
-			NarrativeReport:                 value.NarrativeReport,
-			ChallengesAndProblemEncountered: value.ChallengesAndProblemEncountered,
-			PrayerRequest:                   value.PrayerRequest,
-			CreatedAt:                       value.CreatedAt,
-			UpdatedAt:                       value.UpdatedAt,
-		}
-
-		// Calculate average attendance for each type
-		report.WorshipServiceAvg = model.CalculateAverage(value.WorshipService)
-		report.SundaySchoolAvg = model.CalculateAverage(value.SundaySchool)
-		report.PrayerMeetingsAvg = model.CalculateAverage(value.PrayerMeetings)
-		report.BibleStudiesAvg = model.CalculateAverage(value.BibleStudies)
-		report.MensFellowshipsAvg = model.CalculateAverage(value.MensFellowships)
-		report.WomensFellowshipsAvg = model.CalculateAverage(value.WomensFellowships)
-		report.YouthFellowshipsAvg = model.CalculateAverage(value.YouthFellowships)
-		report.ChildFellowshipsAvg = model.CalculateAverage(value.ChildFellowships)
-		report.OutreachAvg = model.CalculateAverage(value.Outreach)
-		report.TrainingOrSeminarsAvg = model.CalculateAverage(value.TrainingOrSeminars)
-		report.LeadershipConferencesAvg = model.CalculateAverage(value.LeadershipConferences)
-		report.LeadershipTrainingAvg = model.CalculateAverage(value.LeadershipTraining)
-		report.OthersAvg = model.CalculateAverage(value.Others)
-		report.FamilyDaysAvg = model.CalculateAverage(value.FamilyDays)
-		report.TithesAndOfferingsAvg = model.CalculateAverage(value.TithesAndOfferings)
-		report.HomeVisitedAvg = model.CalculateAverage(value.HomeVisited)
-		report.BibleStudyOrGroupLedAvg = model.CalculateAverage(value.BibleStudyOrGroupLed)
-		report.SermonOrMessagePreachedAvg = model.CalculateAverage(value.SermonOrMessagePreached)
-		report.PersonNewlyContactedAvg = model.CalculateAverage(value.PersonNewlyContacted)
-		report.PersonFollowedUpAvg = model.CalculateAverage(value.PersonFollowedUp)
-		report.PersonLedToChristAvg = model.CalculateAverage(value.PersonLedToChrist)
-
-		reportResp = append(reportResp, report)
-	}
-
-	return reportResp, nil
+	return result, nil
 }
 
 func (r *ReportServiceImpl) FindById(ctx context.Context, id int) (*response.ReportResponse, error) {

@@ -61,6 +61,20 @@ type Report struct {
 	UpdatedAt                       time.Time `json:"updated_at"`
 }
 
+type SearchReportQuery struct {
+	MonthOf    string `form:"month_of"`
+	WorkerName string `form:"worker_name"`
+	Page       int    `form:"page"`
+	PerPage    int    `form:"per_page"`
+}
+
+type SearchReportResult struct {
+	TotalCount int       `json:"total_count"`
+	Reports    []*Report `json:"reports"`
+	Page       int       `json:"page"`
+	PerPage    int       `json:"per_page"`
+}
+
 // Helper function to calculate average attendance
 func CalculateAverage(attendance []int) float64 {
 	if len(attendance) == 0 {
